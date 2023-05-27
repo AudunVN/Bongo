@@ -55,6 +55,16 @@ public class Team {
         return (completed & (1 << (slot % 25))) > 0;
     }
 
+    public int completedCount() {
+        int count = 0;
+
+        for (int i = 0; i < 25; i++) {
+            count += this.completed(i) ? 1 : 0;
+        }
+
+        return count;
+    }
+
     public void complete(int slot) {
         completed |= (1 << (slot % 25));
         this.completion = null;
@@ -63,6 +73,16 @@ public class Team {
     
     public boolean locked(int slot) {
         return (locked & (1 << (slot % 25))) > 0;
+    }
+
+    public int lockedCount() {
+        int count = 0;
+
+        for (int i = 0; i < 25; i++) {
+            count += this.locked(i) ? 1 : 0;
+        }
+
+        return count;
     }
 
     public void lock(int slot) {

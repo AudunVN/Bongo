@@ -480,6 +480,7 @@ public class Bongo extends SavedData {
                         }
                         MinecraftForge.EVENT_BUS.post(new BongoTaskEvent(this, serverPlayer.getLevel(), serverPlayer, task(i)));
                     }
+                    MinecraftForge.EVENT_BUS.post(new BongoTasksUpdatedEvent(this, serverPlayer.getLevel(), serverPlayer));
                 }
             }
         }

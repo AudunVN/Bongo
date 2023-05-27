@@ -9,6 +9,8 @@ import io.github.noeppi_noeppi.mods.bongo.task.*;
 import io.github.noeppi_noeppi.mods.bongo.util.StatAndValue;
 import io.github.noeppi_noeppi.mods.bongo.util.TagWithCount;
 import io.github.noeppi_noeppi.mods.bongo.util.Util;
+import io.github.noeppi_noeppi.mods.bongo.event.BongoTaskEvent;
+import io.github.noeppi_noeppi.mods.bongo.event.BongoTasksUpdatedEvent;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.Registry;
 import net.minecraft.network.chat.Component;
@@ -24,6 +26,10 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.scores.Scoreboard;
+import net.minecraft.world.scores.Objective;
+import net.minecraft.world.scores.criteria.ObjectiveCriteria;
+import net.minecraft.world.scores.Score;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.event.AddReloadListenerEvent;
@@ -302,6 +308,35 @@ public class EventListener {
                     Util.broadcastTeam(event.getPlayer().level, team, tc);
                 }
             }
+        }
+    }
+
+    @SubscribeEvent
+    public void tasksUpdatedEvent(BongoTasksUpdatedEvent event) {
+        if (event.getPlayer() != null) {
+            ServerPlayer player = event.getPlayer();
+            Level level = player.level;
+            Scoreboard scoreboard = level.getScoreboard();
+            Bongo bongo = Bongo.get(level);
+            Team team = bongo.getTeam(player);
+            
+            Objective completedTasksObjective;
+            if (scoreboard.hasObjective("bongo.tasks_completed")) {
+                completedTasksObjective = scoreboard.getObjective("bongo.tasks_completed");
+            } else {
+                completedTasksObjective = scoreboard.addObjective("bongo.tasks_completed", ObjectiveCriteria.DUMMY, Component.literal("Tasks completed"), ObjectiveCriteria.RenderType.INTEGER);
+            }
+            Score completedTasksScore = scoreboard.getOrCreatePlayerScore(player.getScoreboardName(), completedTasksObjective);
+            completedTasksScore.setScore(team.completedCount());
+
+            Objective lockedTasksObjective;
+            if (scoreboard.hasObjective("bongo.tasks_locked")) {
+                lockedTasksObjective = scoreboard.getObjective("bongo.tasks_locked");
+            } else {
+                lockedTasksObjective = scoreboard.addObjective("bongo.tasks_locked", ObjectiveCriteria.DUMMY, Component.literal("Tasks locked"), ObjectiveCriteria.RenderType.INTEGER);
+            }
+            Score lockedTasksScore = scoreboard.getOrCreatePlayerScore(player.getScoreboardName(), lockedTasksObjective);
+            lockedTasksScore.setScore(team.lockedCount());
         }
     }
 }

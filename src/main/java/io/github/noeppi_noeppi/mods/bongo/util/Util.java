@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 import com.mojang.datafixers.util.Either;
 import io.github.noeppi_noeppi.mods.bongo.Bongo;
 import io.github.noeppi_noeppi.mods.bongo.data.Team;
+import io.github.noeppi_noeppi.mods.bongo.event.BongoTasksUpdatedEvent;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -24,6 +25,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import javax.annotation.Nullable;
@@ -149,7 +151,9 @@ public class Util {
             if (team != null && team.lockRandomTask()) {
                 MutableComponent tc = Component.translatable("bongo.task_locked.death", player.getDisplayName());
                 if (player instanceof ServerPlayer) {
-                    ((ServerPlayer) player).getLevel().getServer().getPlayerList().getPlayers().forEach(thePlayer -> {
+                    ServerPlayer serverPlayer = (ServerPlayer) player;
+                    MinecraftForge.EVENT_BUS.post(new BongoTasksUpdatedEvent(bongo, serverPlayer.getLevel(), serverPlayer));
+                    serverPlayer.getLevel().getServer().getPlayerList().getPlayers().forEach(thePlayer -> {
                         if (team.hasPlayer(thePlayer)) {
                             thePlayer.sendSystemMessage(tc);
                             thePlayer.connection.send(new ClientboundSoundPacket(SoundEvents.ANVIL_LAND, SoundSource.MASTER, thePlayer.getX(), thePlayer.getY(), thePlayer.getZ(), 1f, 1, 0));
