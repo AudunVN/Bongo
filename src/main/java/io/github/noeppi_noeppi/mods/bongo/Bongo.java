@@ -416,10 +416,14 @@ public class Bongo extends SavedData {
                         }
                         if (getSettings().game().lockout()) {
                             if (getSettings().game().lockIfMostTeamsDone()) {
-                                int teamCount = teams.size();
+                                int teamCount = 0;
                                 int teamsWithTaskCompleted = 0;
 
                                 for (Team t : teams.values()) {
+                                    if (!t.isEmpty()) {
+                                        teamCount++;
+                                    }
+
                                     if (t.completed(i)) {
                                         teamsWithTaskCompleted++;
                                     }
@@ -446,10 +450,14 @@ public class Bongo extends SavedData {
                         // inverted tasks are completed for everyone if the first player fails it
                         if (getSettings().game().lockout()) {
                             if (getSettings().game().lockIfMostTeamsDone()) {
-                                int teamCount = teams.size();
+                                int teamCount = 0;
                                 int teamsWithTaskLocked = 0;
 
                                 for (Team t : teams.values()) {
+                                    if (!t.isEmpty()) {
+                                        teamCount++;
+                                    }
+
                                     if (t.locked(i)) {
                                         teamsWithTaskLocked++;
                                     }
