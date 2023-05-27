@@ -415,9 +415,28 @@ public class Bongo extends SavedData {
                             task(i).consume(type, serverPlayer, compare);
                         }
                         if (getSettings().game().lockout()) {
-                            for (Team t : teams.values()) {
-                                if (!t.completed(i)) {
-                                    t.lock(i);
+                            if (getSettings().game().lockIfMostTeamsDone()) {
+                                int teamCount = teams.size();
+                                int teamsWithTaskCompleted = 0;
+
+                                for (Team t : teams.values()) {
+                                    if (t.completed(i)) {
+                                        teamsWithTaskCompleted++;
+                                    }
+                                }
+
+                                if (teamsWithTaskCompleted >= (double)teamCount/2) {
+                                    for (Team t : teams.values()) {
+                                        if (!t.completed(i)) {
+                                            t.lock(i);
+                                        }
+                                    }
+                                }
+                            } else {
+                                for (Team t : teams.values()) {
+                                    if (!t.completed(i)) {
+                                        t.lock(i);
+                                    }
                                 }
                             }
                         }
@@ -426,9 +445,28 @@ public class Bongo extends SavedData {
                         team.lock(i);
                         // inverted tasks are completed for everyone if the first player fails it
                         if (getSettings().game().lockout()) {
-                            for (Team t : teams.values()) {
-                                if (!t.locked(i)) {
-                                    t.complete(i);
+                            if (getSettings().game().lockIfMostTeamsDone()) {
+                                int teamCount = teams.size();
+                                int teamsWithTaskLocked = 0;
+
+                                for (Team t : teams.values()) {
+                                    if (t.locked(i)) {
+                                        teamsWithTaskLocked++;
+                                    }
+                                }
+
+                                if (teamsWithTaskLocked >= (double)teamCount/2) {
+                                    for (Team t : teams.values()) {
+                                        if (!t.locked(i)) {
+                                            t.complete(i);
+                                        }
+                                    }
+                                }
+                            } else {
+                                for (Team t : teams.values()) {
+                                    if (!t.locked(i)) {
+                                        t.complete(i);
+                                    }
                                 }
                             }
                         }

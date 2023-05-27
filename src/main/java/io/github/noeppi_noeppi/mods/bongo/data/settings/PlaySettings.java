@@ -19,7 +19,8 @@ public record PlaySettings(
         boolean lockTaskOnDeath,
         int teleportsPerTeam,
         boolean leaderboard,
-        boolean lockout
+        boolean lockout,
+        boolean lockIfMostTeamsDone
 ) {
     
     public static final Codec<PlaySettings> CODEC = Codecs.get(BongoMod.class, PlaySettings.class);
@@ -34,6 +35,7 @@ public record PlaySettings(
             false,
             0,
             false,
-            false
+            false,
+            true
     );
 }
