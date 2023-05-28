@@ -197,6 +197,7 @@ public class Bongo extends SavedData {
             MinecraftForge.EVENT_BUS.post(new BongoStartEvent.Level(this, gameLevel));
             level.getServer().getPlayerList().getPlayers().forEach(player -> {
                 if (uids.contains(player.getGameProfile().getId())) {
+                    MinecraftForge.EVENT_BUS.post(new BongoTasksUpdatedEvent(this, gameLevel, player));
                     MinecraftForge.EVENT_BUS.post(new BongoStartEvent.Player(this, gameLevel, player));
                 }
             });
