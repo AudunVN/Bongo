@@ -11,6 +11,7 @@ import io.github.noeppi_noeppi.mods.bongo.util.TagWithCount;
 import io.github.noeppi_noeppi.mods.bongo.util.Util;
 import io.github.noeppi_noeppi.mods.bongo.event.BongoTaskEvent;
 import io.github.noeppi_noeppi.mods.bongo.event.BongoTasksUpdatedEvent;
+import io.github.noeppi_noeppi.mods.bongo.Keybinds;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.Registry;
 import net.minecraft.network.chat.Component;
@@ -36,6 +37,7 @@ import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.event.OnDatapackSyncEvent;
 import net.minecraftforge.event.ServerChatEvent;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.TickEvent.ClientTickEvent;
 import net.minecraftforge.event.entity.living.*;
 import net.minecraftforge.event.entity.player.AdvancementEvent;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
@@ -44,6 +46,7 @@ import net.minecraftforge.event.server.ServerStartedEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModList;
+import net.minecraftforge.fml.LogicalSide;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
@@ -103,6 +106,16 @@ public class EventListener {
 
     @SubscribeEvent
     public void playerTick(TickEvent.PlayerTickEvent event) {
+        if (event.side == LogicalSide.CLIENT && event.player.getCommandSenderWorld().isClientSide) {
+            if (event.phase == TickEvent.Phase.END) { // Only call code once as the tick event is called twice every tick
+                while (Keybinds.TEAM_BACKPACK.consumeClick()) {
+                    Player player = event.player;
+					player.chat();
+                    player.sendChatMessage(Component.literal("/bingo backpack"));
+                }
+            }
+        }
+
         if (!event.player.getCommandSenderWorld().isClientSide && event.player.tickCount % 20 == 0 && event.player instanceof ServerPlayer) {
             Bongo bongo = Bongo.get(event.player.level);
             if (bongo.canCompleteTasks(event.player)) {
