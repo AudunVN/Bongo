@@ -2,6 +2,7 @@
   "bongo.avoid": "Avoid %s",
   "bongo.backpack": "Backpack of ",
   "bongo.big_overlay": "Enlarge Bingo Overlay",
+  "bongo.team_backpack": "Bingo Team Backpack",
   "bongo.cmd.bp.norun": "You cannot access your team's backpack while the game is not running.",
   "bongo.cmd.bp.noteam": "Join a team to access your team's backpack.",
   "bongo.cmd.create.done": " created a new game.",

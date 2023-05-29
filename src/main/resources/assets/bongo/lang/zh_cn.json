@@ -1,6 +1,7 @@
 {
   "bongo.backpack": "背包：",
   "bongo.big_overlay": "放大Bingo面板",
+  "bongo.team_backpack": "你团队的Bingo背包",
   "bongo.cmd.bp.norun": "你无法打开队伍共享背包，因为没有进行中的游戏。",
   "bongo.cmd.bp.noteam": "加入一支队伍才能打开队伍共享背包。",
   "bongo.cmd.create.done": " 创建了一场游戏。",

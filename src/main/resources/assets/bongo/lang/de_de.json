@@ -2,6 +2,7 @@
   "bongo.avoid": "Meide %s",
   "bongo.backpack": "Rucksack von ",
   "bongo.big_overlay": "Große Bingo Karte",
+  "bongo.team_backpack": "Bingo Team Rucksack",
   "bongo.cmd.bp.norun": "Du kannst jetzt nicht auf deinen Rucksack zugreifen. Das Spiel wurde noch nicht gestartet.",
   "bongo.cmd.bp.noteam": "Du musst einem team beitreten um deinen Rucksack sehen zu können",
   "bongo.cmd.create.done": " hat ein neues Spiel erstellt",
