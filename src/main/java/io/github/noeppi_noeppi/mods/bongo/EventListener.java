@@ -4,6 +4,7 @@ import io.github.noeppi_noeppi.mods.bongo.config.ClientConfig;
 import io.github.noeppi_noeppi.mods.bongo.data.Team;
 import io.github.noeppi_noeppi.mods.bongo.data.settings.GameSettings;
 import io.github.noeppi_noeppi.mods.bongo.data.task.GameTasks;
+import io.github.noeppi_noeppi.mods.bongo.network.BongoRequestType;
 import io.github.noeppi_noeppi.mods.bongo.network.BongoMessageType;
 import io.github.noeppi_noeppi.mods.bongo.task.*;
 import io.github.noeppi_noeppi.mods.bongo.util.StatAndValue;
@@ -106,12 +107,11 @@ public class EventListener {
 
     @SubscribeEvent
     public void playerTick(TickEvent.PlayerTickEvent event) {
-        if (event.side == LogicalSide.CLIENT && event.player.getCommandSenderWorld().isClientSide) {
+        if (event.player.getCommandSenderWorld().isClientSide) {
             if (event.phase == TickEvent.Phase.END) { // Only call code once as the tick event is called twice every tick
                 while (Keybinds.TEAM_BACKPACK.consumeClick()) {
                     Player player = event.player;
-					player.chat();
-                    player.sendChatMessage(Component.literal("/bingo backpack"));
+                    BongoMod.getNetwork().clientRequest(player, BongoRequestType.OPEN_BACKPACK);
                 }
             }
         }

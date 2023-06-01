@@ -10,6 +10,8 @@ import net.minecraftforge.network.PacketDistributor;
 import org.moddingx.libx.mod.ModX;
 import org.moddingx.libx.network.NetworkX;
 
+import java.util.UUID;
+
 public class BongoNetwork extends NetworkX {
 
     public BongoNetwork(ModX mod) {
@@ -18,19 +20,28 @@ public class BongoNetwork extends NetworkX {
 
     @Override
     protected Protocol getProtocol() {
-        return Protocol.of("4");
+        return Protocol.of("5");
     }
 
     @Override
     protected void registerPackets() {
         registerGame(NetworkDirection.PLAY_TO_CLIENT, new BongoUpdateMessage.Serializer(), () -> BongoUpdateMessage.Handler::new);
         registerGame(NetworkDirection.PLAY_TO_CLIENT, new AdvancementInfoUpdateMessage.Serializer(), () -> AdvancementInfoUpdateMessage.Handler::new);
-		registerGame(NetworkDirection.PLAY_TO_SERVER, new AdvancementInfoUpdateMessage.Serializer(), () -> AdvancementInfoUpdateMessage.Handler::new);
+        registerGame(NetworkDirection.PLAY_TO_SERVER, new AdvancementInfoUpdateMessage.Serializer(), () -> AdvancementInfoUpdateMessage.Handler::new);
+        registerGame(NetworkDirection.PLAY_TO_SERVER, new BongoClientRequest.Serializer(), () -> BongoClientRequest.Handler::new);
     }
 
     public void updateBongo(Level level) {
         if (!level.isClientSide) {
             channel.send(PacketDistributor.ALL.noArg(), new BongoUpdateMessage(Bongo.get(level)));
+        }
+    }
+
+    public void clientRequest(Player player, BongoRequestType requestType) {
+        if (player.getCommandSenderWorld().isClientSide) {
+            UUID playerId = player.getUUID();
+
+            channel.send(PacketDistributor.SERVER.noArg(), new BongoClientRequest(playerId, requestType));
         }
     }
 

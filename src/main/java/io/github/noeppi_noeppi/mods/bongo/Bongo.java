@@ -10,6 +10,7 @@ import io.github.noeppi_noeppi.mods.bongo.data.Team;
 import io.github.noeppi_noeppi.mods.bongo.data.settings.GameSettings;
 import io.github.noeppi_noeppi.mods.bongo.event.*;
 import io.github.noeppi_noeppi.mods.bongo.network.BongoMessageType;
+import io.github.noeppi_noeppi.mods.bongo.network.BongoRequestType;
 import io.github.noeppi_noeppi.mods.bongo.task.Task;
 import io.github.noeppi_noeppi.mods.bongo.task.TaskType;
 import io.github.noeppi_noeppi.mods.bongo.util.Highlight;
@@ -19,6 +20,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -55,6 +57,28 @@ public class Bongo extends SavedData {
             return bongo;
         } else {
             return clientInstance == null ? new Bongo() : clientInstance;
+        }
+    }
+
+    public static void handleClientRequest(UUID playerId, BongoRequestType bongoRequestType) {
+        ServerPlayer player = null;
+
+        Bongo bongo = Bongo.get(player.level);
+
+        if (bongo.level != null) {
+            player = bongo.level.getServer().getPlayerList().getPlayer(playerId);
+        }
+
+        if (player != null && bongoRequestType == BongoRequestType.OPEN_BACKPACK) {
+            Team team = bongo.getTeam(player);
+
+            if (team == null) {
+                player.sendSystemMessage(Component.translatable("bongo.cmd.bp.noteam"));
+            } else if (!bongo.running()) {
+                player.sendSystemMessage(Component.translatable("bongo.cmd.bp.norun"));
+            } else {
+                team.openBackPack(player);
+            }
         }
     }
 
