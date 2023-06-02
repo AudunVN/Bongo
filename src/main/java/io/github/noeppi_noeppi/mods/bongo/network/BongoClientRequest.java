@@ -13,10 +13,10 @@ import java.util.UUID;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-public record BongoClientRequest(UUID playerId, BongoRequestType bongoRequestType) {
+public record BongoClientRequest(Bongo bongo, BongoRequestType bongoRequestType) {
     
-    public BongoClientRequest(UUID playerId) {
-        this(playerId, BongoRequestType.GENERIC);
+    public BongoClientRequest(Bongo bongo) {
+        this(bongo, BongoRequestType.GENERIC);
     }
     
     public static class Serializer implements PacketSerializer<BongoClientRequest> {
@@ -28,22 +28,19 @@ public record BongoClientRequest(UUID playerId, BongoRequestType bongoRequestTyp
 
         @Override
         public void encode(BongoClientRequest msg, FriendlyByteBuf buffer) {
-            CompoundTag playerNbt = new CompoundTag();
-            playerNbt.putUUID("player", msg.playerId);
-
-            buffer.writeNbt(playerNbt);
+            buffer.writeNbt(msg.bongo.save(new CompoundTag()));
             buffer.writeEnum(msg.bongoRequestType);
         }
 
         @Override
         public BongoClientRequest decode(FriendlyByteBuf buffer) {
-            CompoundTag playerNbt = buffer.readNbt();
-            UUID playerId = playerNbt.getUUID("player");
+            Bongo bongo = new Bongo();
+            bongo.load(Objects.requireNonNull(buffer.readNbt()));
 
-            return new BongoClientRequest(playerId, buffer.readEnum(BongoRequestType.class));
+            return new BongoClientRequest(bongo, buffer.readEnum(BongoRequestType.class));
         }
     }
-    
+
     public static class Handler implements PacketHandler<BongoClientRequest> {
 
         @Override
@@ -53,7 +50,8 @@ public record BongoClientRequest(UUID playerId, BongoRequestType bongoRequestTyp
 
         @Override
         public boolean handle(BongoClientRequest msg, Supplier<NetworkEvent.Context> ctx) {
-            Bongo.handleClientRequest(msg.playerId, msg.bongoRequestType);
+            ServerPlayer player = ctx.get().getSender();
+            Bongo.handleClientRequest(msg.bongo, player, msg.bongoRequestType);
             return true;
         }
     }

@@ -1,6 +1,7 @@
 package io.github.noeppi_noeppi.mods.bongo.network;
 
 import io.github.noeppi_noeppi.mods.bongo.Bongo;
+import io.github.noeppi_noeppi.mods.bongo.BongoMod;
 import net.minecraft.advancements.Advancement;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
@@ -37,10 +38,14 @@ public class BongoNetwork extends NetworkX {
     }
 
     public void clientRequest(Player player, BongoRequestType requestType) {
-        if (player.getCommandSenderWorld().isClientSide) {
-            UUID playerId = player.getUUID();
+        BongoMod.logger.debug("Creating client request");
 
-            channel.send(PacketDistributor.SERVER.noArg(), new BongoClientRequest(playerId, requestType));
+        if (player.getCommandSenderWorld().isClientSide) {
+            Bongo bongo = Bongo.get(player.getCommandSenderWorld());
+
+            channel.send(PacketDistributor.SERVER.noArg(), new BongoClientRequest(bongo, requestType));
+
+            BongoMod.logger.debug("Sent client request");
         }
     }
 

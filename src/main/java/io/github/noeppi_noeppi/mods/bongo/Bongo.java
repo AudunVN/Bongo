@@ -60,28 +60,6 @@ public class Bongo extends SavedData {
         }
     }
 
-    public static void handleClientRequest(UUID playerId, BongoRequestType bongoRequestType) {
-        ServerPlayer player = null;
-
-        Bongo bongo = Bongo.get(player.level);
-
-        if (bongo.level != null) {
-            player = bongo.level.getServer().getPlayerList().getPlayer(playerId);
-        }
-
-        if (player != null && bongoRequestType == BongoRequestType.OPEN_BACKPACK) {
-            Team team = bongo.getTeam(player);
-
-            if (team == null) {
-                player.sendSystemMessage(Component.translatable("bongo.cmd.bp.noteam"));
-            } else if (!bongo.running()) {
-                player.sendSystemMessage(Component.translatable("bongo.cmd.bp.norun"));
-            } else {
-                team.openBackPack(player);
-            }
-        }
-    }
-
     public static void updateClient(Bongo bongo, BongoMessageType bongoMessageType) {
         clientInstance = bongo;
         if (mc == null) {
@@ -105,6 +83,33 @@ public class Bongo extends SavedData {
                     JeiIntegration.setBookmarks(stacks, advancements);
                 } else {
                     JeiIntegration.setBookmarks(ImmutableSet.of(), ImmutableSet.of());
+                }
+            }
+        }
+    }
+
+    public static void handleClientRequest(Bongo bongo, ServerPlayer player, BongoRequestType bongoRequestType) {
+        UUID playerId = player.getUUID();
+        BongoMod.logger.debug("Handling client request for " + playerId + ", requestType " + bongoRequestType);
+
+        if (player == null) {
+            return;
+        }
+
+        Bongo serverInstance = Bongo.get(player.level);
+
+        if (bongoRequestType == BongoRequestType.OPEN_BACKPACK) {
+            if (player.hasContainerOpen()) {
+                player.closeContainer();
+            } else {
+                Team team = serverInstance.getTeam(player);
+
+                if (team == null) {
+                    player.sendSystemMessage(Component.translatable("bongo.cmd.bp.noteam"));
+                } else if (!bongo.running()) {
+                    player.sendSystemMessage(Component.translatable("bongo.cmd.bp.norun"));
+                } else {
+                    team.openBackPack(player);
                 }
             }
         }

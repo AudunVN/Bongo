@@ -110,6 +110,8 @@ public class EventListener {
         if (event.player.getCommandSenderWorld().isClientSide) {
             if (event.phase == TickEvent.Phase.END) { // Only call code once as the tick event is called twice every tick
                 while (Keybinds.TEAM_BACKPACK.consumeClick()) {
+                    BongoMod.logger.debug("Team backpack key pressed");
+
                     Player player = event.player;
                     BongoMod.getNetwork().clientRequest(player, BongoRequestType.OPEN_BACKPACK);
                 }
