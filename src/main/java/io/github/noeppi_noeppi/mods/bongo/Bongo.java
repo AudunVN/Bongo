@@ -10,6 +10,7 @@ import io.github.noeppi_noeppi.mods.bongo.data.Team;
 import io.github.noeppi_noeppi.mods.bongo.data.settings.GameSettings;
 import io.github.noeppi_noeppi.mods.bongo.event.*;
 import io.github.noeppi_noeppi.mods.bongo.network.BongoMessageType;
+import io.github.noeppi_noeppi.mods.bongo.network.BongoRequestType;
 import io.github.noeppi_noeppi.mods.bongo.task.Task;
 import io.github.noeppi_noeppi.mods.bongo.task.TaskType;
 import io.github.noeppi_noeppi.mods.bongo.util.Highlight;
@@ -19,6 +20,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -81,6 +83,33 @@ public class Bongo extends SavedData {
                     JeiIntegration.setBookmarks(stacks, advancements);
                 } else {
                     JeiIntegration.setBookmarks(ImmutableSet.of(), ImmutableSet.of());
+                }
+            }
+        }
+    }
+
+    public static void handleClientRequest(Bongo bongo, ServerPlayer player, BongoRequestType bongoRequestType) {
+        UUID playerId = player.getUUID();
+        BongoMod.logger.debug("Handling client request for " + playerId + ", requestType " + bongoRequestType);
+
+        if (player == null) {
+            return;
+        }
+
+        Bongo serverInstance = Bongo.get(player.level);
+
+        if (bongoRequestType == BongoRequestType.OPEN_BACKPACK) {
+            if (player.hasContainerOpen()) {
+                player.closeContainer();
+            } else {
+                Team team = serverInstance.getTeam(player);
+
+                if (team == null) {
+                    player.sendSystemMessage(Component.translatable("bongo.cmd.bp.noteam"));
+                } else if (!bongo.running()) {
+                    player.sendSystemMessage(Component.translatable("bongo.cmd.bp.norun"));
+                } else {
+                    team.openBackPack(player);
                 }
             }
         }

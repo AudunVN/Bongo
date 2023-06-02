@@ -1,6 +1,7 @@
 {
   "bongo.backpack": "Plecak: ",
   "bongo.big_overlay": "Powiększ nakładkę z Bingo",
+  "bongo.team_backpack": "Plecak Bingo swojej drużyny",
   "bongo.cmd.bp.norun": "Nie możesz uzyskać dostępu do plecaka swojej drużyny, gdy gra nie jest w trakcie trwania.",
   "bongo.cmd.bp.noteam": "Dołącz do drużyny, aby uzyskać dostęp do jej plecaka.",
   "bongo.cmd.create.done": " utworzył(a) nową grę.",
