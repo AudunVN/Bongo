@@ -99,18 +99,14 @@ public class Bongo extends SavedData {
         Bongo serverInstance = Bongo.get(player.level);
 
         if (bongoRequestType == BongoRequestType.OPEN_BACKPACK) {
-            if (player.hasContainerOpen()) {
-                player.closeContainer();
-            } else {
-                Team team = serverInstance.getTeam(player);
+            Team team = serverInstance.getTeam(player);
 
-                if (team == null) {
-                    player.sendSystemMessage(Component.translatable("bongo.cmd.bp.noteam"));
-                } else if (!bongo.running()) {
-                    player.sendSystemMessage(Component.translatable("bongo.cmd.bp.norun"));
-                } else {
-                    team.openBackPack(player);
-                }
+            if (team == null) {
+                player.sendSystemMessage(Component.translatable("bongo.cmd.bp.noteam"));
+            } else if (!bongo.running()) {
+                player.sendSystemMessage(Component.translatable("bongo.cmd.bp.norun"));
+            } else {
+                team.openBackPack(player);
             }
         }
     }

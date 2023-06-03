@@ -13,8 +13,10 @@ import io.github.noeppi_noeppi.mods.bongo.util.Util;
 import io.github.noeppi_noeppi.mods.bongo.event.BongoTaskEvent;
 import io.github.noeppi_noeppi.mods.bongo.event.BongoTasksUpdatedEvent;
 import io.github.noeppi_noeppi.mods.bongo.Keybinds;
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.Registry;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
@@ -34,6 +36,7 @@ import net.minecraft.world.scores.criteria.ObjectiveCriteria;
 import net.minecraft.world.scores.Score;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.event.OnDatapackSyncEvent;
 import net.minecraftforge.event.ServerChatEvent;
@@ -101,6 +104,22 @@ public class EventListener {
             Level level = player.getCommandSenderWorld();
             if (!level.isClientSide) {
                 Bongo.get(level).checkCompleted(TaskTypeEffect.INSTANCE, player, event.getEffectInstance().getEffect());
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public void screenEvent(ScreenEvent.KeyPressed.Pre event) {
+        if (Keybinds.TEAM_BACKPACK.isActiveAndMatches(InputConstants.getKey(event.getKeyCode(), event.getScanCode()))) {
+            Minecraft mc = Minecraft.getInstance();
+            Player player = null;
+
+            if (mc != null) {
+                player = mc.player;
+                if (mc.player != null && player.hasContainerOpen()) {
+                    player.closeContainer();
+                    event.setCanceled(true);
+                }
             }
         }
     }
