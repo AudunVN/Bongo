@@ -15,7 +15,7 @@ import io.github.noeppi_noeppi.mods.bongo.event.BongoTasksUpdatedEvent;
 import io.github.noeppi_noeppi.mods.bongo.Keybinds;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.ChatFormatting;
-import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -25,6 +25,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraft.stats.ServerStatsCounter;
+import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.player.Player;
@@ -65,7 +66,7 @@ public class EventListener {
         Level level = event.getEntity().getCommandSenderWorld();
         if (!level.isClientSide && level instanceof ServerLevel && event.getEntity() instanceof ServerPlayer) {
             Bongo bongo = Bongo.get(level);
-            if (bongo.running()) {
+            if (bongo.running() && bongo.getSettings().server().preventJoiningDuringGame()) {
                 boolean playerFound = false;
                 for (Team team : bongo.getTeams()) {
                     if (team.hasPlayer(event.getEntity())) {
@@ -91,7 +92,7 @@ public class EventListener {
     }
 
     @SubscribeEvent
-    public void advancementGrant(AdvancementEvent event) {
+    public void advancementGrant(AdvancementEvent.AdvancementEarnEvent event) {
         Level level = event.getEntity().getCommandSenderWorld();
         if (!level.isClientSide) {
             Bongo.get(level).checkCompleted(TaskTypeAdvancement.INSTANCE, event.getEntity(), event.getAdvancement().getId());
@@ -138,7 +139,7 @@ public class EventListener {
         }
 
         if (!event.player.getCommandSenderWorld().isClientSide && event.player.tickCount % 20 == 0 && event.player instanceof ServerPlayer) {
-            Bongo bongo = Bongo.get(event.player.level);
+            Bongo bongo = Bongo.get(event.player.level());
             if (bongo.canCompleteTasks(event.player)) {
                 Map<ItemStack, Integer> stacks = new HashMap<>();
                 bongo.getElementsOf(TaskTypeItem.INSTANCE)
@@ -152,7 +153,7 @@ public class EventListener {
                     if (!stack.isEmpty()) {
                         for (Map.Entry<ItemStack, Integer> entry : stacks.entrySet()) {
                             ItemStack test = entry.getKey();
-                            if (ItemStack.isSameIgnoreDurability(stack, test) && Util.matchesNBT(test.getTag(), stack.getTag())) {
+                            if (ItemStack.isSameItem(stack, test) && Util.matchesNBT(test.getTag(), stack.getTag())) {
                                 entry.setValue(entry.getValue() + stack.getCount());
                             }
                         }
@@ -174,7 +175,7 @@ public class EventListener {
                 
                 // This is a bit hacky but it works
                 try {
-                    ResourceLocation biomeKey = event.player.level.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY).getKey(event.player.level.getBiome(event.player.blockPosition()).value());
+                    ResourceLocation biomeKey = event.player.level().registryAccess().registryOrThrow(Registries.BIOME).getKey(event.player.level().getBiome(event.player.blockPosition()).value());
                     bongo.checkCompleted(TaskTypeBiome.INSTANCE, event.player, biomeKey);
                 } catch (Exception e) {
                     // In case of unbound values
@@ -186,7 +187,7 @@ public class EventListener {
                     event.player.setAirSupply(event.player.getMaxAirSupply());
                 }
 
-                ServerStatsCounter mgr = ((ServerPlayer) event.player).getLevel().getServer().getPlayerList().getPlayerStats(event.player);
+                ServerStatsCounter mgr = ((ServerPlayer) event.player).serverLevel().getServer().getPlayerList().getPlayerStats(event.player);
                 bongo.getElementsOf(TaskTypeStat.INSTANCE)
                         .map(value -> new StatAndValue(value.stat(), mgr.getValue(value.stat())))
                         .forEach(value -> bongo.checkCompleted(TaskTypeStat.INSTANCE, event.player, value));
@@ -202,6 +203,7 @@ public class EventListener {
     @SubscribeEvent
     public void resourcesReload(AddReloadListenerEvent event) {
         event.addListener(new SimplePreparableReloadListener<>() {
+            
             @Nonnull
             @Override
             protected Object prepare(@Nonnull ResourceManager resourceManager, @Nonnull ProfilerFiller profiler) {
@@ -238,8 +240,8 @@ public class EventListener {
     }
 
     private void handleCommonDamageEvent(LivingEvent event, DamageSource source, Runnable setDamageToZero) {
-        if (!event.getEntity().level.isClientSide && event.getEntity() instanceof Player player && !source.isBypassInvul()) {
-            Bongo bongo = Bongo.get(player.level);
+        if (!event.getEntity().level().isClientSide && event.getEntity() instanceof Player player && !source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
+            Bongo bongo = Bongo.get(player.level());
             Team team = bongo.getTeam(player);
             if (bongo.running() && team != null) {
                 if (source.getEntity() instanceof Player damageSourcePlayer) {
@@ -272,7 +274,7 @@ public class EventListener {
             ItemStack stack = event.getItemStack();
             if (stack.isEmpty() || event.getEntity() == null)
                 return;
-            Bongo bongo = Bongo.get(event.getEntity().level);
+            Bongo bongo = Bongo.get(event.getEntity().level());
             if (bongo.active() && bongo.isTooltipStack(stack)) {
                 event.getToolTip().add(Util.REQUIRED_ITEM);
             }
@@ -282,7 +284,7 @@ public class EventListener {
     @SubscribeEvent
     public void playerName(PlayerEvent.NameFormat event) {
         Player player = event.getEntity();
-        Bongo bongo = Bongo.get(player.level);
+        Bongo bongo = Bongo.get(player.level());
         if (bongo.active()) {
             Team team = bongo.getTeam(player);
             if (team != null) {
@@ -300,7 +302,7 @@ public class EventListener {
     @SubscribeEvent
     public void tablistName(PlayerEvent.TabListNameFormat event) {
         Player player = event.getEntity();
-        Bongo bongo = Bongo.get(player.level);
+        Bongo bongo = Bongo.get(player.level());
         if (bongo.active()) {
             Team team = bongo.getTeam(player);
             if (team != null) {
@@ -318,19 +320,19 @@ public class EventListener {
     @SubscribeEvent
     public void entityDie(LivingDeathEvent event) {
         if (event.getSource().getEntity() instanceof Player player) {
-            Bongo bongo = Bongo.get(player.level);
+            Bongo bongo = Bongo.get(player.level());
             bongo.checkCompleted(TaskTypeEntity.INSTANCE, player, event.getEntity().getType());
         }
-        if (event.getEntity() instanceof Player player && !event.getEntity().level.isClientSide) {
-            Bongo bongo = Bongo.get(player.level);
+        if (event.getEntity() instanceof Player player && !event.getEntity().level().isClientSide) {
+            Bongo bongo = Bongo.get(player.level());
             Util.handleTaskLocking(bongo, player);
         }
     }
 
     @SubscribeEvent
-    public void serverChat(ServerChatEvent.Submitted event) {
+    public void serverChat(ServerChatEvent event) {
         if (!ModList.get().isLoaded("minemention") && event.getPlayer() != null) {
-            Bongo bongo = Bongo.get(event.getPlayer().level);
+            Bongo bongo = Bongo.get(event.getPlayer().level());
             if (bongo.teamChat(event.getPlayer())) {
                 Team team = bongo.getTeam(event.getPlayer());
                 if (team != null) {
@@ -339,7 +341,7 @@ public class EventListener {
                     tc.append(team.getName());
                     tc.append(Component.literal("] ").withStyle(ChatFormatting.RESET));
                     tc.append(event.getMessage());
-                    Util.broadcastTeam(event.getPlayer().level, team, tc);
+                    Util.broadcastTeam(event.getPlayer().level(), team, tc);
                 }
             }
         }

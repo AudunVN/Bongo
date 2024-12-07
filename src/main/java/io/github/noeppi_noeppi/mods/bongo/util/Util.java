@@ -8,6 +8,7 @@ import io.github.noeppi_noeppi.mods.bongo.event.BongoTasksUpdatedEvent;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.Holder;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -19,12 +20,14 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.registries.ForgeRegistries;
 
@@ -38,8 +41,8 @@ public class Util {
     public static final Comparator<ResourceLocation> COMPARE_RESOURCE = Comparator.nullsFirst(Comparator.comparing(ResourceLocation::getNamespace).thenComparing(ResourceLocation::getPath));
 
     public static final List<DyeColor> PREFERRED_COLOR_ORDER = ImmutableList.of(
-            DyeColor.ORANGE, DyeColor.LIME, DyeColor.LIGHT_BLUE, DyeColor.PINK, DyeColor.CYAN,
-            DyeColor.YELLOW, DyeColor.RED, DyeColor.GREEN, DyeColor.BLUE, DyeColor.PURPLE,
+            DyeColor.YELLOW, DyeColor.LIME, DyeColor.LIGHT_BLUE, DyeColor.PINK, DyeColor.CYAN,
+            DyeColor.ORANGE, DyeColor.RED, DyeColor.GREEN, DyeColor.BLUE, DyeColor.PURPLE,
             DyeColor.GRAY, DyeColor.MAGENTA, DyeColor.BLACK, DyeColor.WHITE, DyeColor.BROWN,
             DyeColor.LIGHT_GRAY
     );
@@ -107,9 +110,12 @@ public class Util {
     }
 
     public static boolean validSpawn(Level level, BlockPos pos) {
-        return level.getBlockState(pos).getBlock().isPossibleToRespawnInThis()
-                && level.getBlockState(pos.above()).getBlock().isPossibleToRespawnInThis()
+        return canRespawnIn(level.getBlockState(pos)) && canRespawnIn(level.getBlockState(pos.above()))
                 && level.getBlockState(pos.below()).isFaceSturdy(level, pos, Direction.UP);
+    }
+    
+    private static boolean canRespawnIn(BlockState state) {
+        return state.getBlock().isPossibleToRespawnInThis(state);
     }
     
     public static Optional<ResourceLocation> biome(ServerLevel level, BlockPos pos) {
@@ -150,17 +156,20 @@ public class Util {
             Team team = bongo.getTeam(player);
             if (team != null && team.lockRandomTask()) {
                 MutableComponent tc = Component.translatable("bongo.task_locked.death", player.getDisplayName());
-                if (player instanceof ServerPlayer) {
-                    ServerPlayer serverPlayer = (ServerPlayer) player;
+                if (player instanceof ServerPlayer serverPlayer) {
                     MinecraftForge.EVENT_BUS.post(new BongoTasksUpdatedEvent(bongo, serverPlayer.getLevel(), serverPlayer));
                     serverPlayer.getLevel().getServer().getPlayerList().getPlayers().forEach(thePlayer -> {
                         if (team.hasPlayer(thePlayer)) {
                             thePlayer.sendSystemMessage(tc);
-                            thePlayer.connection.send(new ClientboundSoundPacket(SoundEvents.ANVIL_LAND, SoundSource.MASTER, thePlayer.getX(), thePlayer.getY(), thePlayer.getZ(), 1f, 1, 0));
+                            thePlayer.connection.send(new ClientboundSoundPacket(sound(SoundEvents.ANVIL_LAND), SoundSource.MASTER, thePlayer.getX(), thePlayer.getY(), thePlayer.getZ(), 1f, 1, 0));
                         }
                     });
                 }
             }
         }
+    }
+    
+    public static Holder<SoundEvent> sound(SoundEvent event) {
+        return ForgeRegistries.SOUND_EVENTS.getHolder(event).orElseGet(() -> Holder.direct(event));
     }
 }

@@ -1,9 +1,11 @@
 package io.github.noeppi_noeppi.mods.bongo.effect;
 
 import io.github.noeppi_noeppi.mods.bongo.data.Team;
+import io.github.noeppi_noeppi.mods.bongo.data.settings.KeptLevelData;
 import io.github.noeppi_noeppi.mods.bongo.event.BongoStartEvent;
 import io.github.noeppi_noeppi.mods.bongo.event.BongoTaskEvent;
 import io.github.noeppi_noeppi.mods.bongo.event.BongoWinEvent;
+import io.github.noeppi_noeppi.mods.bongo.util.Util;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
@@ -21,30 +23,49 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 
 public class DefaultEffects {
 
     @SubscribeEvent
     public void gameStart(BongoStartEvent.Level event) {
-        event.getLevel().setDayTime(600);
-        event.getLevel().serverLevelData.setRaining(false);
-        event.getLevel().serverLevelData.setThundering(false);
-        event.getLevel().serverLevelData.setWanderingTraderSpawnDelay(24000);
-        event.getLevel().serverLevelData.setWanderingTraderSpawnDelay(25);
+        Set<KeptLevelData> keep = event.getBongo().getSettings().level().keep();
+        if (!keep.contains(KeptLevelData.time)) {
+            event.getLevel().setDayTime(600);
+        }
+        if (!keep.contains(KeptLevelData.weather)) {
+            event.getLevel().serverLevelData.setRaining(false);
+            event.getLevel().serverLevelData.setThundering(false);
+        }
+        if (!keep.contains(KeptLevelData.wandering_trader_time)) {
+            event.getLevel().serverLevelData.setWanderingTraderSpawnDelay(24000);
+            event.getLevel().serverLevelData.setWanderingTraderSpawnChance(25);
+        }
     }
 
     @SubscribeEvent
     public void playerInit(BongoStartEvent.Player event) {
-        event.getPlayer().getInventory().clearContent();
-        event.getPlayer().setExperienceLevels(0);
-        event.getPlayer().setExperiencePoints(0);
-        event.getPlayer().setGameMode(GameType.SURVIVAL);
-        event.getBongo().getSettings().equipment().equip(event.getPlayer());
-        AdvancementCommands.Action.REVOKE.perform(event.getPlayer(), event.getLevel().getServer().getAdvancements().getAllAdvancements());
-        ServerStatsCounter mgr = event.getLevel().getServer().getPlayerList().getPlayerStats(event.getPlayer());
-        mgr.stats.keySet().forEach(stat -> mgr.stats.put(stat, 0));
-        mgr.markAllDirty();
-        mgr.sendStats(event.getPlayer());
+        Set<KeptLevelData> keep = event.getBongo().getSettings().level().keep();
+        if (!keep.contains(KeptLevelData.equipment)) {
+            event.getPlayer().getInventory().clearContent();
+            event.getBongo().getSettings().equipment().equip(event.getPlayer());
+        }
+        if (!keep.contains(KeptLevelData.experience)) {
+            event.getPlayer().setExperienceLevels(0);
+            event.getPlayer().setExperiencePoints(0);
+        }
+        if (!keep.contains(KeptLevelData.game_mode)) {
+            event.getPlayer().setGameMode(GameType.SURVIVAL);
+        }
+        if (!keep.contains(KeptLevelData.advancements)) {
+            AdvancementCommands.Action.REVOKE.perform(event.getPlayer(), event.getLevel().getServer().getAdvancements().getAllAdvancements());
+        }
+        if (!keep.contains(KeptLevelData.statistics)) {
+            ServerStatsCounter mgr = event.getLevel().getServer().getPlayerList().getPlayerStats(event.getPlayer());
+            mgr.stats.keySet().forEach(stat -> mgr.stats.put(stat, 0));
+            mgr.markAllDirty();
+            mgr.sendStats(event.getPlayer());
+        }
     }
 
     @SubscribeEvent
@@ -55,7 +76,7 @@ public class DefaultEffects {
             event.getLevel().getServer().getPlayerList().getPlayers().forEach(player -> {
                 player.sendSystemMessage(tc);
                 if (team.hasPlayer(player)) {
-                    player.connection.send(new ClientboundSoundPacket(SoundEvents.END_PORTAL_SPAWN, SoundSource.MASTER, player.getX(), player.getY(), player.getZ(), 0.5f, 1, 0));
+                    player.connection.send(new ClientboundSoundPacket(Util.sound(SoundEvents.END_PORTAL_SPAWN), SoundSource.MASTER, player.getX(), player.getY(), player.getZ(), 0.5f, 1, 0));
                 }
             });
         }
@@ -109,7 +130,7 @@ public class DefaultEffects {
             player.sendSystemMessage(tcc);
             player.connection.send(new ClientboundSetTitleTextPacket(tc));
             player.connection.send(new ClientboundSetTitlesAnimationPacket(10, 60, 10));
-            player.connection.send(new ClientboundSoundPacket(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.MASTER, player.getX(), player.getY(), player.getZ(), 1.2f, 1, 0));
+            player.connection.send(new ClientboundSoundPacket(Util.sound(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE), SoundSource.MASTER, player.getX(), player.getY(), player.getZ(), 1.2f, 1, 0));
             if (leaderboard != null) {
                 player.sendSystemMessage(leaderboard);
             }

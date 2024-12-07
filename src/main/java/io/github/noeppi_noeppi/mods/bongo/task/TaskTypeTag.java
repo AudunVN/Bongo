@@ -1,18 +1,13 @@
 package io.github.noeppi_noeppi.mods.bongo.task;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.MapCodec;
+import io.github.noeppi_noeppi.mods.bongo.render.RenderOverlay;
 import io.github.noeppi_noeppi.mods.bongo.util.Highlight;
 import io.github.noeppi_noeppi.mods.bongo.util.ItemRenderUtil;
 import io.github.noeppi_noeppi.mods.bongo.util.TagWithCount;
 import io.github.noeppi_noeppi.mods.bongo.util.Util;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiComponent;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.core.Holder;
-import net.minecraft.core.HolderSet;
-import net.minecraft.core.Registry;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.server.MinecraftServer;
@@ -23,15 +18,17 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.tags.IReverseTag;
+import net.minecraftforge.registries.tags.ITagManager;
 import org.moddingx.libx.render.ClientTickHandler;
 import org.moddingx.libx.util.Misc;
-import org.moddingx.libx.util.data.TagAccess;
 import org.moddingx.libx.util.game.ComponentUtil;
 
 import javax.annotation.Nullable;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 public class TaskTypeTag implements TaskType<TagWithCount> {
@@ -64,46 +61,41 @@ public class TaskTypeTag implements TaskType<TagWithCount> {
 
     @Override
     public Component contentName(TagWithCount element, @Nullable MinecraftServer server) {
-        return Component.literal(Util.resourceStr(element.getTag()));
+        return Component.literal(Util.resourceStr(element.getId()));
     }
 
     @Override
     public Comparator<TagWithCount> order() {
-        return Comparator.comparing(TagWithCount::getTag, Util.COMPARE_RESOURCE).thenComparingInt(TagWithCount::getCount);
+        return Comparator.comparing(TagWithCount::getId, Util.COMPARE_RESOURCE).thenComparingInt(TagWithCount::getCount);
     }
 
     @Override
     public void validate(TagWithCount element, MinecraftServer server) {
-        if (!element.getTag().equals(Misc.MISSIGNO)) {
-            Optional<HolderSet.Named<Item>> tag = TagAccess.ROOT.tryGet(element.getKey());
-            if (tag.isEmpty() || tag.get().stream().toList().isEmpty()) {
-                throw new IllegalStateException("Empty or unknown tag: " + element.getTag());
-            }
+        if (!element.getId().equals(Misc.MISSINGNO)) {
+            ITagManager<Item> mgr = Objects.requireNonNull(ForgeRegistries.ITEMS.tags());
+            if (!mgr.isKnownTagName(element.getKey())) throw new IllegalStateException("Unknown tag: " + element.getId());
+            if (mgr.getTag(element.getKey()).isEmpty()) throw new IllegalStateException("Empty tag: " + element.getId());
         }
     }
 
     @Override
     public Stream<TagWithCount> listElements(MinecraftServer server, @Nullable ServerPlayer player) {
-        @SuppressWarnings("unchecked")
-        Registry<Item> registry = (Registry<Item>) Registry.REGISTRY.get(Registry.ITEM_REGISTRY.location());
-        if (registry == null) {
-            new IllegalStateException("Item registry not found").printStackTrace();
-            return Stream.empty();
-        }
+        ITagManager<Item> mgr = Objects.requireNonNull(ForgeRegistries.ITEMS.tags());
         if (player == null) {
-            return registry.getTags().map(Pair::getFirst).map(key -> new TagWithCount(key.location(), 1));
+            return mgr.getTagNames().map(key -> new TagWithCount(key.location(), 1));
         } else {
             return player.getInventory().items.stream()
                     .filter(stack -> !stack.isEmpty())
-                    .flatMap(stack -> registry.getResourceKey(stack.getItem()).flatMap(registry::getHolder).stream()
-                            .flatMap(Holder::tags).map(key -> new TagWithCount(key.location(), stack.getCount()))
-                    );
+                    .flatMap(stack -> mgr.getReverseTag(stack.getItem()).stream())
+                    .flatMap(IReverseTag::getTagKeys)
+                    .distinct()
+                    .map(key -> new TagWithCount(key.location(), 1));
         }
     }
 
     @Override
     public boolean shouldComplete(ServerPlayer player, TagWithCount element, TagWithCount compare) {
-        return element.getTag().equals(compare.getTag()) && element.getCount() <= compare.getCount();
+        return element.getId().equals(compare.getId()) && element.getCount() <= compare.getCount();
     }
 
     @Override
@@ -139,15 +131,15 @@ public class TaskTypeTag implements TaskType<TagWithCount> {
 
     @Override
     @OnlyIn(Dist.CLIENT)
-    public void renderSlot(Minecraft mc, PoseStack poseStack, MultiBufferSource buffer) {
-        GuiComponent.blit(poseStack, 0, 0, 0, 0, 18, 18, 256, 256);
+    public void renderSlot(Minecraft mc, GuiGraphics graphics) {
+        graphics.blit(RenderOverlay.BINGO_SLOTS_TEXTURE, 0, 0, 0, 0, 18, 18, 256, 256);
     }
 
     @Override
     @OnlyIn(Dist.CLIENT)
-    public void renderSlotContent(Minecraft mc, TagWithCount element, PoseStack poseStack, MultiBufferSource buffer, boolean bigBongo) {
+    public void renderSlotContent(Minecraft mc, GuiGraphics graphics, TagWithCount element, boolean bigBongo) {
         ItemStack stack = cycle(element);
-        ItemRenderUtil.renderItem(poseStack, buffer, stack == null ? new ItemStack(Items.BARRIER) : stack, !bigBongo);
+        ItemRenderUtil.renderItem(graphics, stack == null ? new ItemStack(Items.BARRIER) : stack, !bigBongo);
     }
 
     @Nullable
@@ -156,7 +148,7 @@ public class TaskTypeTag implements TaskType<TagWithCount> {
         if (items.isEmpty()) {
             return null;
         } else {
-            ItemStack stack = new ItemStack(items.get((ClientTickHandler.ticksInGame / 20) % items.size()));
+            ItemStack stack = new ItemStack(items.get((ClientTickHandler.ticksInGame() / 20) % items.size()));
             stack.setCount(element.getCount());
             return stack;
         }

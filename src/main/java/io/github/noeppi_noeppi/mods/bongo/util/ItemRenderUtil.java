@@ -1,27 +1,21 @@
 package io.github.noeppi_noeppi.mods.bongo.util;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.item.ItemStack;
 import org.moddingx.libx.render.RenderHelper;
 
 public class ItemRenderUtil {
     
-    public static void renderItem(PoseStack poseStack, MultiBufferSource buffer, ItemStack stack, boolean includeAmount) {
+    public static void renderItem(GuiGraphics graphics, ItemStack stack, boolean includeAmount) {
         RenderHelper.resetColor();
-        RenderSystem.getModelViewStack().pushPose();
-        RenderSystem.getModelViewStack().mulPoseMatrix(poseStack.last().pose());
-        RenderSystem.applyModelViewMatrix();
-        Minecraft.getInstance().getItemRenderer().renderAndDecorateFakeItem(stack, 0, 0);
+        graphics.pose().pushPose();
+        graphics.renderFakeItem(stack, 0, 0);
         if (includeAmount) {
-            RenderSystem.getModelViewStack().translate(0, 0, 20);
-            RenderSystem.applyModelViewMatrix();
-            Minecraft.getInstance().getItemRenderer().renderGuiItemDecorations(Minecraft.getInstance().font, stack, 0, 0);
+            graphics.pose().translate(0, 0, 20);
+            graphics.renderItemDecorations(Minecraft.getInstance().font, stack, 0, 0);
         }
-        RenderSystem.getModelViewStack().popPose();
+        graphics.pose().popPose();
         RenderHelper.resetColor();
-        RenderSystem.applyModelViewMatrix();
     }
 }

@@ -23,6 +23,7 @@ Your settings should be defined in a file in `data/<datapack-id>/bingo_settings/
     "lockout": false
   },
   "level": {
+    "keep": [],
     "teleporter": "bongo.default",
     "teleport_radius": 10000
   },
@@ -50,6 +51,9 @@ Your settings should be defined in a file in `data/<datapack-id>/bingo_settings/
       "item": "minecraft:air",
       "count": 0
     }
+  },
+  "server": {
+    "prevent_joining_during_game": true
   }
 }
 ```
@@ -124,6 +128,23 @@ The `equipment` settings control the equipment in the game. `inventory`, `head`,
 
 All items are in [recipe format](https://minecraft.fandom.com/wiki/Recipe#JSON_format).
 
+### Keep
+
+The `level.keep` setting is a list of strings that determines, what Bongo should not reset, when thegame starts. Supported keys:
+
+```
+game_mode               If set, the game mode of player is not changed to survival.
+equipment               If set, armor and inventory are not cleared. Also prevents filling in starting inventory and armor items.
+advancements            If set, advancements are not revoked.
+experience              If set, experience is not removed.
+statistics              If set, statistics are kept. Otherwise they are set to 0.
+time                    If set, the level time is not set to 0.
+weather                 If set, the weather is not cleared.
+wandering_trader_time   If set, the wandering trader spawn delay is not reset.
+```
+
+`level.keep` can also be set to the special value `"all"` which causes Bongo to keep everything. The default is the empty list `[]`, which means Bongo will clear everything.
+
 ### Teleporter
 
 The `level.teleporter` setting specifies how bongo should teleport players when the game starts. Other mods may register their teleporters as well. Bongo has the following builtin teleporters:
@@ -138,6 +159,11 @@ bongo.skyblock   (Only when SkyBlockBuilder is present) Teleports each team to a
 ### teleportRadius
 
 `level.teleport_radius` is the distance from spawn where the players will be teleported. Please note that this is not supported by all [teleporters](#Teleporter) Default is `10000`.
+
+### preventJoiningDuringGame
+
+if `server.prevent_joining_during_game` is set to true, Bongo won't allow new players to join the server while the game is running. Players who were already part of the current round but left after it started will be ableto rejoin. Also operators can always join the game. This defaults to `true`.
+
 
 ## Tasks
 
